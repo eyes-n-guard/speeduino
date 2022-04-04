@@ -2561,6 +2561,14 @@ void setPinMapping(byte boardID)
   if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_MAX_IO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
   if ( (configPage10.vvt2Pin != 0) && (configPage10.vvt2Pin < BOARD_MAX_IO_PINS) ) { pinVVT_2 = pinTranslate(configPage10.vvt2Pin); }
 
+  if (configPage15.etbEnable) //etb pin setup
+  {
+    if (configPage15.etbPositionPinA < BOARD_MAX_IO_PINS) { pinEtbPositionA = pinTranslateAnalog(configPage15.etbPositionPinA); }
+    if (configPage15.etbPositionPinB < BOARD_MAX_IO_PINS) { pinEtbPositionB = pinTranslateAnalog(configPage15.etbPositionPinB); }
+    if (configPage15.etbMotorPinA < BOARD_MAX_IO_PINS) { pinEtbMotorA = pinTranslate(configPage15.etbMotorPinA); }
+    if (configPage15.etbMotorPinB < BOARD_MAX_IO_PINS) { pinEtbMotorB = pinTranslate(configPage15.etbMotorPinB); }
+  }
+
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
 
@@ -2775,7 +2783,14 @@ void setPinMapping(byte boardID)
       if (configPage10.wmiEmptyPolarity == 0) { pinMode(pinWMIEmpty, INPUT_PULLUP); } //Normal setting
       else { pinMode(pinWMIEmpty, INPUT); } //inverted setting
     }
-  }  
+  }
+  if (configPage15.etbEnable > 0)
+  {
+    if (!pinIsOutput(pinEtbPositionA)) { pinMode(pinEtbPositionA, INPUT); }
+    if (!pinIsOutput(pinEtbPositionB)) { pinMode(pinEtbPositionB, INPUT); }
+    pinMode(pinEtbMotorA, OUTPUT);
+    pinMode(pinEtbMotorB, OUTPUT);
+  }
 
   //These must come after the above pinMode statements
   triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));

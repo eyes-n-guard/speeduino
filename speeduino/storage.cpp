@@ -280,6 +280,14 @@ void writeConfig(uint8_t pageNum)
       -----------------------------------------------------*/
       result = writeTable(&ignitionTable2, ignitionTable2.type_key, { EEPROM_CONFIG14_MAP, 0 });
       break;
+    
+    case etbPage:
+      /*---------------------------------------------------
+      | Config page 15 (See storage.h for data layout)
+      -----------------------------------------------------*/
+      result = write_range((byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15), { EEPROM_CONFIG15_START, 0});
+      break;
+
 
     default:
       break;
@@ -290,7 +298,7 @@ void writeConfig(uint8_t pageNum)
   else { BIT_CLEAR(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
 }
 
-/** Reset all configPage* structs (2,4,6,9,10,13) and write them full of null-bytes.
+/** Reset all configPage* structs (2,4,6,9,10,13,15) and write them full of null-bytes.
  */
 void resetConfigPages()
 {
@@ -434,6 +442,11 @@ void loadConfig()
   loadTable(&ignitionTable2, ignitionTable2.type_key, EEPROM_CONFIG14_MAP);
 
   //*********************************************************************************************************************************************************************************
+  //CONFIG PAGE (15)
+  load_range(EEPROM_CONFIG15_START, (byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15));
+
+  //*********************************************************************************************************************************************************************************
+ 
 }
 
 /** Read the calibration information from EEPROM.

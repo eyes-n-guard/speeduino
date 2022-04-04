@@ -88,6 +88,7 @@ void setup()
 {
   initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
+  //Serial.begin(9600);
 }
 
 inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
@@ -319,6 +320,9 @@ void loop()
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
       #endif
+
+      readEtbPosition();
+      
 
       //Check for any outstanding EEPROM writes.
       if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 

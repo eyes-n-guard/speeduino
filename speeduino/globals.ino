@@ -245,6 +245,10 @@ byte pinWMIIndicator; // No water indicator bulb
 byte pinWMIEnabled; // ON-OFF output to relay/pump/solenoid 
 byte pinMC33810_1_CS;
 byte pinMC33810_2_CS;
+byte pinEtbPositionA; //etb pins
+byte pinEtbPositionB;
+byte pinEtbMotorA;
+byte pinEtbMotorB;
 #ifdef USE_SPI_EEPROM
   byte pinSPIFlash_CS;
 #endif
@@ -256,6 +260,7 @@ struct config6 configPage6;
 struct config9 configPage9;
 struct config10 configPage10;
 struct config13 configPage13;
+struct config15 configPage15;
 
 //byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
 //byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */

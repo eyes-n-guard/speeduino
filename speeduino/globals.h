@@ -740,6 +740,8 @@ struct statuses {
   long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
+  byte etbPosition; //Electronic throttle body position sensor value
+  byte etbSetpoint; //Setpoint commanded to etb
 };
 
 /** Page 2 of the config - mostly variables that are required for fuel.
@@ -1425,6 +1427,41 @@ struct config13 {
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
 
+/**
+Page 15 - ETB settings
+128 bytes long
+*/
+struct config15 {
+
+  //bytes 0 to 5
+  byte etbPositionPinA    :4;
+  byte etbPositionPinB    :4;
+  byte etbPositionClosedA;          //"V",    0.019608,    0.0,    0.0,    5.0,    3
+  byte etbPositionClosedB;          //"V",    0.019608,    0.0,    0.0,    5.0,    3
+  byte etbPositionOpenA;            //"V",    0.019608,    0.0,    0.0,    5.0,    3
+  byte etbPositionOpenB;            //"V",    0.019608,    0.0,    0.0,    5.0,    3
+  byte etbPositionFaultThreshold;   //"%",    1.0,         0.0,    0.0,    100,    0
+
+  //byte 6
+  byte etbEnable        :1;
+  byte etbSensorSelect  :3;
+  byte etbMotorPinA     :6;
+  byte etbMotorPinB     :6;
+
+  //bytes 7 to 10
+  byte etbMotorKP;  //"%",    1.0,    0.0,    0.0,    255,    0
+  byte etbMotorKI;  //"%",    1.0,    0.0,    0.0,    255,    0
+  byte etbMotorKD;  //"%",    1.0,    0.0,    0.0,    255,    0
+
+  //bytes 11 to 127 
+  byte unused15_12_127[116];
+
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+#endif
+
 extern byte pinInjector1; //Output pin injector 1
 extern byte pinInjector2; //Output pin injector 2
 extern byte pinInjector3; //Output pin injector 3
@@ -1500,6 +1537,10 @@ extern byte pinWMIIndicator; // No water indicator bulb
 extern byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
 extern byte pinMC33810_1_CS;
 extern byte pinMC33810_2_CS;
+extern byte pinEtbPositionA; //etb pins
+extern byte pinEtbPositionB;
+extern byte pinEtbMotorA;
+extern byte pinEtbMotorB;
 #ifdef USE_SPI_EEPROM
   extern byte pinSPIFlash_CS;
 #endif
@@ -1517,6 +1558,7 @@ extern struct config6 configPage6;
 extern struct config9 configPage9;
 extern struct config10 configPage10;
 extern struct config13 configPage13;
+extern struct config15 configPage15;
 //extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
 //extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
 //extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */

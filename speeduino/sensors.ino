@@ -722,6 +722,61 @@ byte getOilPressure()
   return (byte)tempOilPressure;
 }
 
+void readEtbPosition()
+{
+  uint8_t tempEtbA = 0, tempEtbB = 0;
+  uint16_t tempReading;
+
+  if(configPage15.etbEnable > 0)
+  {
+    tempReading = analogRead(pinEtbPositionA);
+    tempReading = analogRead(pinEtbPositionA);
+    tempEtbA = fastMap1023toX(tempReading, 255);
+    
+
+    /*
+    Serial.print(tempReading);
+    Serial.print(" ");
+    Serial.print(tempEtbA);
+    Serial.print(" ");
+    Serial.print(configPage15.etbPositionClosedA);
+    Serial.print(" ");
+    Serial.print(configPage15.etbPositionOpenA);
+    Serial.print("\n");
+    */
+
+    tempReading = analogRead(pinEtbPositionB);
+    tempReading = analogRead(pinEtbPositionB);
+    tempEtbB = fastMap1023toX(tempReading, 255);
+    
+
+    switch(configPage15.etbSensorSelect)
+    {
+      case 0: //average
+        tempEtbA = map(tempEtbA, configPage15.etbPositionClosedA, configPage15.etbPositionOpenA, 0, 200);
+        tempEtbB = map(tempEtbB, configPage15.etbPositionClosedB, configPage15.etbPositionOpenB, 0, 200);
+        currentStatus.etbPosition = (byte)(((uint16_t)tempEtbA + (uint16_t)tempEtbB)/2);
+      break;
+
+      case 1: currentStatus.etbPosition = (byte)tempEtbA; break; //sensor A raw
+      case 2: currentStatus.etbPosition = (byte)tempEtbB; break; //sensor B raw
+
+      case 3: //sensor A scaled
+        tempEtbA = map(tempEtbA, configPage15.etbPositionClosedA, configPage15.etbPositionOpenA, 0, 200);
+        currentStatus.etbPosition = (byte)tempEtbA;
+      break;
+
+      case 4: //sensor B scaled
+        tempEtbB = map(tempEtbB, configPage15.etbPositionClosedB, configPage15.etbPositionOpenB, 0, 200);
+        currentStatus.etbPosition = (byte)tempEtbB;
+      break;
+
+      
+    }
+  }
+
+}
+
 /*
  * The interrupt function for reading the flex sensor frequency and pulse width
  * flexCounter value is incremented with every pulse and reset back to 0 once per second

@@ -7,7 +7,7 @@
 //
 // For TunerStudio:
 // 1. Each page has a numeric identifier (0 to N-1)
-// 2. A single page is a continguous block of data.
+// 2. A single page is a contiguous block of data.
 // So individual bytes are identified by a (page number, offset)
 //
 // The TS layout is not what is in memory. E.g.
@@ -24,7 +24,7 @@
 //  2. Offset to intra-entity byte
 
 // Page sizes as defined in the .ini file
-constexpr const uint16_t PROGMEM ini_page_sizes[] = { 0, 128, 288, 288, 128, 288, 128, 240, 384, 192, 192, 288, 192, 128, 288 };
+constexpr const uint16_t PROGMEM ini_page_sizes[] = { 0, 128, 288, 288, 128, 288, 128, 240, 384, 192, 192, 288, 192, 128, 288, 128 };
 
 // ========================= Table size calculations =========================
 // Note that these should be computed at compile time, assuming the correct
@@ -396,6 +396,12 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
     {
       CHECK_RAW(progOutsPage, offset, &configPage13, sizeof(configPage13), 0)
       END_OF_PAGE(progOutsPage, 1)
+    }
+
+    case etbPage:
+    {
+      CHECK_RAW(etbPage, offset, &configPage15, sizeof(configPage15), 0)
+      END_OF_PAGE(etbPage, 1)
     }
 
     default:
