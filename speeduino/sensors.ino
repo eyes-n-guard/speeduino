@@ -724,7 +724,7 @@ byte getOilPressure()
 
 void readEtbPosition()
 {
-  uint8_t tempEtbA = 0, tempEtbB = 0;
+  uint8_t tempEtbA, tempEtbB, scaledEtbA, scaledEtbB;
   uint16_t tempReading;
 
   if(configPage15.etbEnable > 0)
@@ -732,46 +732,24 @@ void readEtbPosition()
     tempReading = analogRead(pinEtbPositionA);
     tempReading = analogRead(pinEtbPositionA);
     tempEtbA = fastMap1023toX(tempReading, 255);
+    tempEtbA = ADC_FILTER(tempEtbA, configPage15.etbAdcFilterA, EtbAdcALast);
+    EtbAdcALast = tempEtbA;
+    scaledEtbA = map(tempEtbA, configPage15.etbPositionClosedA, configPage15.etbPositionOpenA, 0, 200);
     
-
-    /*
-    Serial.print(tempReading);
-    Serial.print(" ");
-    Serial.print(tempEtbA);
-    Serial.print(" ");
-    Serial.print(configPage15.etbPositionClosedA);
-    Serial.print(" ");
-    Serial.print(configPage15.etbPositionOpenA);
-    Serial.print("\n");
-    */
-
     tempReading = analogRead(pinEtbPositionB);
     tempReading = analogRead(pinEtbPositionB);
     tempEtbB = fastMap1023toX(tempReading, 255);
-    
+    tempEtbB = ADC_FILTER(tempEtbB, configPage15.etbAdcFilterB, EtbAdcBLast);
+    EtbAdcBLast = tempEtbB;
+    scaledEtbB = map(tempEtbB, configPage15.etbPositionClosedB, configPage15.etbPositionOpenB, 0, 200);
 
     switch(configPage15.etbSensorSelect)
     {
-      case 0: //average
-        tempEtbA = map(tempEtbA, configPage15.etbPositionClosedA, configPage15.etbPositionOpenA, 0, 200);
-        tempEtbB = map(tempEtbB, configPage15.etbPositionClosedB, configPage15.etbPositionOpenB, 0, 200);
-        currentStatus.etbPosition = (byte)(((uint16_t)tempEtbA + (uint16_t)tempEtbB)/2);
-      break;
-
+      case 0:currentStatus.etbPosition = (byte)(((uint16_t)scaledEtbA + (uint16_t)scaledEtbB) >> 1); break;//average
       case 1: currentStatus.etbPosition = (byte)tempEtbA; break; //sensor A raw
       case 2: currentStatus.etbPosition = (byte)tempEtbB; break; //sensor B raw
-
-      case 3: //sensor A scaled
-        tempEtbA = map(tempEtbA, configPage15.etbPositionClosedA, configPage15.etbPositionOpenA, 0, 200);
-        currentStatus.etbPosition = (byte)tempEtbA;
-      break;
-
-      case 4: //sensor B scaled
-        tempEtbB = map(tempEtbB, configPage15.etbPositionClosedB, configPage15.etbPositionOpenB, 0, 200);
-        currentStatus.etbPosition = (byte)tempEtbB;
-      break;
-
-      
+      case 3: currentStatus.etbPosition = (byte)scaledEtbA; break; //sensor A scaled
+      case 4: currentStatus.etbPosition = (byte)scaledEtbB; break; //sensor B scaled
     }
   }
 

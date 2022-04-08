@@ -60,6 +60,8 @@ unsigned long MAP_time; //The time the MAP sample was taken
 unsigned long MAPlast_time; //The time the previous MAP sample was taken
 volatile unsigned long vssTimes[VSS_SAMPLES] = {0};
 volatile byte vssIndex;
+uint8_t EtbAdcALast;
+uint8_t EtbAdcBLast;
 
 
 //These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
@@ -87,7 +89,6 @@ uint16_t getSpeed();
 byte getGear();
 byte getFuelPressure();
 byte getOilPressure();
-void readEtbPosition();
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
 void readCLT(bool=true); //Allows the option to override the use of the filter
@@ -95,6 +96,7 @@ void readIAT();
 void readO2();
 void readBat();
 void readBaro();
+void readEtbPosition();
 
 #if defined(ANALOG_ISR)
 volatile int AnChannel[15];

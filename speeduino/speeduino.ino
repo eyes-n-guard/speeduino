@@ -88,7 +88,6 @@ void setup()
 {
   initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
-  //Serial.begin(9600);
 }
 
 inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
@@ -229,17 +228,21 @@ void loop()
       //This should only be run if the high speed logger are off because it will change the trigger interrupts back to defaults rather than the logger versions
       if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeLogEnabled == false) ) { initialiseTriggers(); }
 
-      VVT1_PIN_LOW();
-      VVT2_PIN_LOW();
-      DISABLE_VVT_TIMER();
-      boostDisable();
+      if(configPage15.etbEnable == false)
+      {
+        VVT1_PIN_LOW();
+        VVT2_PIN_LOW();
+        DISABLE_VVT_TIMER();
+        boostDisable();
+      }
+      
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
     }
 
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
     readMAP();
-    
+
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
@@ -322,7 +325,7 @@ void loop()
       #endif
 
       readEtbPosition();
-      
+      etbControl();
 
       //Check for any outstanding EEPROM writes.
       if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
@@ -419,6 +422,7 @@ void loop()
           digitalWrite(pinWMIIndicator, configPage10.wmiIndicatorPolarity ? HIGH : LOW);
         } 
       }
+      
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_1HZ) { writeSDLogEntry(); }

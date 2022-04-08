@@ -1445,6 +1445,7 @@ struct config15 {
   //byte 6
   byte etbEnable        :1;
   byte etbSensorSelect  :3;
+  byte unused15_6       :4;
   byte etbMotorPinA     :6;
   byte etbMotorPinB     :6;
 
@@ -1453,8 +1454,12 @@ struct config15 {
   byte etbMotorKI;  //"%",    1.0,    0.0,    0.0,    255,    0
   byte etbMotorKD;  //"%",    1.0,    0.0,    0.0,    255,    0
 
-  //bytes 11 to 127 
-  byte unused15_12_127[116];
+  //bytes 11 and 12
+  byte etbAdcFilterA;
+  byte etbAdcFilterB;
+
+  //bytes 14 to 127 
+  byte unused15_14_127[114];
 
 #if defined(CORE_AVR)
   };

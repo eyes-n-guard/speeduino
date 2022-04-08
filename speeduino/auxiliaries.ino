@@ -174,9 +174,9 @@ void initialiseAuxPWM()
     currentStatus.vvt2Angle = 0;
 
     #if defined(CORE_AVR)
-      vvt_pwm_max_count = 1000000L / (16 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      vvt_pwm_max_count = 1000000L / (16 * configPage6.vvtFreq * 16); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     #elif defined(CORE_TEENSY)
-      vvt_pwm_max_count = 1000000L / (32 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      vvt_pwm_max_count = 1000000L / (32 * configPage6.vvtFreq * 16); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     #endif
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
@@ -202,7 +202,7 @@ void initialiseAuxPWM()
     vvtTimeHold = false;
     if (currentStatus.coolant >= (int)(configPage4.vvtMinClt - CALIBRATION_TEMPERATURE_OFFSET)) { vvtIsHot = true; } //Checks to see if coolant's already at operating temperature
   }
-  if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
+  if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1 || configPage15.etbEnable >= 1) )
   {
     // config wmi pwm output to use vvt output
     #if defined(CORE_AVR)
@@ -610,7 +610,7 @@ void vvtControl()
  
     }
   }
-  else 
+  else
   { 
     // Disable timer channel
     DISABLE_VVT_TIMER(); 
@@ -750,6 +750,56 @@ void wmiControl()
   }
 }
 
+void etbControl() //use vvt pins similar to wmi cuz no spare timers available :(
+{
+  if(configPage15.etbEnable >= 1)
+  {
+    int8_t tempMotorPower;
+
+    tempMotorPower = configPage15.etbMotorKP; //temporary for testing stuff because I don't feel like changing the tunerstudio interface rn
+
+    if(tempMotorPower > 0) //I hate this
+    {
+      vvt2_pwm_value = 0;
+      VVT2_PIN_LOW();
+      if(tempMotorPower >= 100)
+      {
+        VVT1_PIN_HIGH();
+        DISABLE_VVT_TIMER();
+      }
+      else
+      {
+        vvt1_pwm_value = percentage(tempMotorPower, vvt_pwm_max_count);
+        ENABLE_VVT_TIMER();
+      }
+    }
+    else if(tempMotorPower < 0)
+    {
+      vvt1_pwm_value = 0;
+      VVT1_PIN_LOW();
+      if(tempMotorPower <= -100)
+      {
+        VVT2_PIN_HIGH();
+        DISABLE_VVT_TIMER();
+      }
+      else
+      {
+        vvt2_pwm_value = percentage(-tempMotorPower, vvt_pwm_max_count);
+        ENABLE_VVT_TIMER();
+      }
+    }
+    else
+    {
+      vvt1_pwm_value = 0;
+      vvt2_pwm_value = 0;
+      VVT1_PIN_LOW();
+      VVT2_PIN_LOW();
+      DISABLE_VVT_TIMER();
+    }
+  }
+  
+}
+
 void boostDisable()
 {
   boostPID.Initialize(); //This resets the ITerm value to prevent rubber banding
@@ -778,6 +828,7 @@ void boostDisable()
     boost_pwm_cur_value = boost_pwm_target_value;
     boost_pwm_state = true;
   }
+  //Serial.println(boost_pwm_state);
 }
 
 //The interrupt to control the VVT PWM
