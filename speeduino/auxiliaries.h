@@ -14,6 +14,7 @@ void nitrousControl();
 void fanControl();
 void wmiControl();
 void etbControl();
+void vtecControl();
 
 #define SIMPLE_BOOST_P  1
 #define SIMPLE_BOOST_I  1
@@ -66,6 +67,7 @@ long boost_pwm_target_value;
 long boost_cl_target_boost;
 byte boostCounter;
 byte vvtCounter;
+byte etbCounter;
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
 volatile bool fan_pwm_state;
 unsigned int fan_pwm_max_count; //Used for variable PWM frequency
@@ -76,6 +78,7 @@ void fanInterrupt();
 uint32_t vvtWarmTime;
 bool vvtIsHot;
 bool vvtTimeHold;
+
 
 volatile bool vvt1_pwm_state;
 volatile bool vvt2_pwm_state;
@@ -91,6 +94,10 @@ long vvt_pid_target_angle;
 long vvt2_pid_target_angle;
 long vvt_pid_current_angle;
 long vvt2_pid_current_angle;
+
+long etb_pid_current_angle;
+long etb_pid_target_angle;
+long etb_pid_motor_power;
 
 void boostInterrupt();
 void vvtInterrupt();

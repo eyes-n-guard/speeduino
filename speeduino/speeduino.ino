@@ -314,6 +314,9 @@ void loop()
       vvtControl();
       //Water methanol injection
       wmiControl();
+      //VTEC
+      vtecControl();
+
       #if TPS_READ_FREQUENCY == 30
         readTPS();
       #endif
@@ -324,9 +327,7 @@ void loop()
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
       #endif
 
-      readEtbPosition();
-      etbControl();
-
+      
       //Check for any outstanding EEPROM writes.
       if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
     }
@@ -435,6 +436,12 @@ void loop()
     || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL) )
     {
       idleControl(); //Run idlecontrol every loop for stepper idle.
+    }
+
+    if((mainLoopCount & 3) == 1) //run at 500 Hz for better control
+    {
+      readEtbPosition();
+      etbControl();
     }
 
     

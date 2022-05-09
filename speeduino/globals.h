@@ -226,8 +226,8 @@
 #define BIT_STATUS4_VVT2_ERROR    2 //VVT2 cam angle within limits or not
 #define BIT_STATUS4_FAN           3 //Fan Status
 #define BIT_STATUS4_BURNPENDING   4
-#define BIT_STATUS4_UNUSED6       5
-#define BIT_STATUS4_UNUSED7       6
+#define BIT_STATUS4_ETB_Fault     5 //etb fault
+#define BIT_STATUS4_VTEC          6 //vtec engaged
 #define BIT_STATUS4_UNUSED8       7
 
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
@@ -322,12 +322,14 @@
 #define FUEL2_MODE_ADD      2
 #define FUEL2_MODE_CONDITIONAL_SWITCH   3
 #define FUEL2_MODE_INPUT_SWITCH 4
+#define FUEL2_MODE_VTEC_SWITCH 5
 
 #define SPARK2_MODE_OFF      0
 #define SPARK2_MODE_MULTIPLY 1
 #define SPARK2_MODE_ADD      2
 #define SPARK2_MODE_CONDITIONAL_SWITCH   3
 #define SPARK2_MODE_INPUT_SWITCH 4
+#define SPARK2_MODE_VTEC_SWITCH 5
 
 #define FUEL2_CONDITION_RPM 0
 #define FUEL2_CONDITION_MAP 1
@@ -355,6 +357,10 @@
 #define VVT_MODE_CLOSED_LOOP 2
 #define VVT_LOAD_MAP      0
 #define VVT_LOAD_TPS      1
+
+#define VTEC_MODE_SWITCHED 0
+#define VTEC_MODE_ALWAYS_OFF 1
+#define VTEC_MODE_ALWAYS_ON 2
 
 #define MULTIPLY_MAP_MODE_OFF   0
 #define MULTIPLY_MAP_MODE_BARO  1
@@ -486,6 +492,7 @@ extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 extern struct table2D coolantProtectTable; //6 bin coolant temperature protection table for engine protection (2D)
 extern struct table2D fanPWMTable;
+extern struct table2D etbSpringBiasTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -742,6 +749,8 @@ struct statuses {
   byte TS_SD_Status; //TunerStudios SD card status
   byte etbPosition; //Electronic throttle body position sensor value
   byte etbSetpoint; //Setpoint commanded to etb
+  byte etbMotorPower; //current ETB motor power
+
 };
 
 /** Page 2 of the config - mostly variables that are required for fuel.
@@ -1445,21 +1454,42 @@ struct config15 {
   //byte 6
   byte etbEnable        :1;
   byte etbSensorSelect  :3;
-  byte unused15_6       :4;
-  byte etbMotorPinA     :6;
-  byte etbMotorPinB     :6;
+  byte etbTestMode      :1;
 
-  //bytes 7 to 10
+  byte unused15_6       :3;
+  byte unused15_7;
+
+  //bytes 8 to 11
+  byte etbTestSetpoint;
   byte etbMotorKP;  //"%",    1.0,    0.0,    0.0,    255,    0
   byte etbMotorKI;  //"%",    1.0,    0.0,    0.0,    255,    0
   byte etbMotorKD;  //"%",    1.0,    0.0,    0.0,    255,    0
 
-  //bytes 11 and 12
+  //bytes 12 and 13
   byte etbAdcFilterA;
   byte etbAdcFilterB;
 
-  //bytes 14 to 127 
-  byte unused15_14_127[114];
+  //bytes 14 to 25
+  byte etbSpringBias[6];
+  byte etbSpringBiasPos[6];
+
+  //bytes 26 to 31
+  byte vtecEnabled      :1;
+  byte vtecMode         :2;
+
+  byte unused15_26      :5;
+
+  byte vtecTableSwitch  :2;
+  byte vtecPin          :6;
+
+  byte vtecTPS;
+  byte vtecRPM;
+
+  byte vtecTPSHysteresis;
+  byte vtecRPMHysteresis;
+
+  //bytes 32 to 127 
+  byte unused15_32_127[96];
 
 #if defined(CORE_AVR)
   };
@@ -1544,8 +1574,7 @@ extern byte pinMC33810_1_CS;
 extern byte pinMC33810_2_CS;
 extern byte pinEtbPositionA; //etb pins
 extern byte pinEtbPositionB;
-extern byte pinEtbMotorA;
-extern byte pinEtbMotorB;
+extern byte pinVTEC;
 #ifdef USE_SPI_EEPROM
   extern byte pinSPIFlash_CS;
 #endif

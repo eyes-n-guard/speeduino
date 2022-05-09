@@ -15,6 +15,7 @@ A full copy of the license may be found in the projects root directory
 integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 integerPID vvtPID(&vvt_pid_current_angle, &currentStatus.vvt1Duty, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage6.vvtPWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 integerPID vvt2PID(&vvt2_pid_current_angle, &currentStatus.vvt2Duty, &vvt2_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage4.vvt2PWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID etbPID(&etb_pid_current_angle, &etb_pid_motor_power, &etb_pid_target_angle, configPage15.etbMotorKP, configPage15.etbMotorKI, configPage15.etbMotorKD, DIRECT);
 
 /*
 Fan control
@@ -140,7 +141,7 @@ void fanControl()
 
 void initialiseAuxPWM()
 {
-  boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
+  boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost)); //with the old speeduino init this would happen before the vvt pin reassignments so it would essentially disable the default pins for other purposes
   boost_pin_mask = digitalPinToBitMask(pinBoost);
   vvt1_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
   vvt1_pin_mask = digitalPinToBitMask(pinVVT_1);
@@ -167,6 +168,15 @@ void initialiseAuxPWM()
   boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
   if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(SIMPLE_BOOST_P, SIMPLE_BOOST_I, SIMPLE_BOOST_D); }
   else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
+
+  if(configPage15.etbEnable > 0)
+  {
+    etbPID.SetOutputLimits(-100, 100);
+    etbPID.SetTunings(configPage15.etbMotorKP, configPage15.etbMotorKI, configPage15.etbMotorKD);
+    etbPID.SetSampleTime(2);
+    etbPID.SetMode(AUTOMATIC);
+    //etbPID.Initialize();
+  }
 
   if( configPage6.vvtEnabled > 0)
   {
@@ -756,7 +766,27 @@ void etbControl() //use vvt pins similar to wmi cuz no spare timers available :(
   {
     int8_t tempMotorPower;
 
-    tempMotorPower = configPage15.etbMotorKP; //temporary for testing stuff because I don't feel like changing the tunerstudio interface rn
+    if((etbCounter & 31) == 1)
+    {
+      etbPID.SetTunings(configPage15.etbMotorKP, configPage15.etbMotorKI, configPage15.etbMotorKD);
+    }
+
+    etb_pid_target_angle = configPage15.etbTestSetpoint;
+    etb_pid_current_angle = currentStatus.etbPosition;
+
+    currentStatus.etbSetpoint = configPage15.etbTestSetpoint;
+
+    etbPID.Compute(true);
+    if(configPage15.etbTestMode == 1)
+    {
+      tempMotorPower = etb_pid_motor_power + (table2D_getValue(&etbSpringBiasTable, currentStatus.etbPosition) - 100); //subtract 100 from spring bias table since it only works with unsigned int for some reason
+    }
+    else
+    {
+      tempMotorPower = 0;
+    }
+
+    currentStatus.etbMotorPower = tempMotorPower;
 
     if(tempMotorPower > 0) //I hate this
     {
@@ -796,8 +826,42 @@ void etbControl() //use vvt pins similar to wmi cuz no spare timers available :(
       VVT2_PIN_LOW();
       DISABLE_VVT_TIMER();
     }
+
+    etbCounter++;
   }
   
+}
+
+void vtecControl() //simple vtec control to save vvt pwm pins for etb motor controller
+{
+  if(configPage15.vtecEnabled == 1)
+  {
+    switch (configPage15.vtecMode)
+    {
+    case VTEC_MODE_SWITCHED: //switched
+      if(currentStatus.RPMdiv100 >= configPage15.vtecRPM && currentStatus.TPS >= configPage15.vtecTPS) { //set vtec bit if rpm and tps above respective thresholds
+        BIT_SET(currentStatus.status4, BIT_STATUS4_VTEC);
+      }
+
+      if(currentStatus.RPMdiv100 < configPage15.vtecRPM - configPage15.vtecRPMHysteresis || currentStatus.TPS < configPage15.vtecTPS - configPage15.vtecTPSHysteresis) { //clear vtec bit if rpm or tps is below the threshold and hysteresis
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VTEC);
+      }
+    break;
+
+    case VTEC_MODE_ALWAYS_OFF: //always off
+      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VTEC);
+    break;
+
+    case VTEC_MODE_ALWAYS_ON: //always on
+      BIT_SET(currentStatus.status4, BIT_STATUS4_VTEC);
+    break;
+
+    default:
+      break;
+    }
+
+    digitalWrite(pinVTEC, BIT_CHECK(currentStatus.status4, BIT_STATUS4_VTEC));
+  }
 }
 
 void boostDisable()

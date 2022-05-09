@@ -54,6 +54,7 @@ struct table2D oilPressureProtectTable;
 struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 struct table2D coolantProtectTable;
 struct table2D fanPWMTable;
+struct table2D etbSpringBiasTable;
 
 /// volatile inj*_pin_port and  inj*_pin_mask vars are for the direct port manipulation of the injectors, coils and aux outputs.
 volatile PORT_TYPE *inj1_pin_port;
@@ -247,8 +248,7 @@ byte pinMC33810_1_CS;
 byte pinMC33810_2_CS;
 byte pinEtbPositionA; //etb pins
 byte pinEtbPositionB;
-byte pinEtbMotorA;
-byte pinEtbMotorB;
+byte pinVTEC;
 #ifdef USE_SPI_EEPROM
   byte pinSPIFlash_CS;
 #endif

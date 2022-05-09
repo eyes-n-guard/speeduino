@@ -276,6 +276,12 @@ void initialiseAll()
     o2CalibrationTable.values = o2Calibration_values;
     o2CalibrationTable.axisX = o2Calibration_bins;
 
+    etbSpringBiasTable.valueSize = SIZE_BYTE;
+    etbSpringBiasTable.axisSize = SIZE_BYTE;
+    etbSpringBiasTable.xSize = 6;
+    etbSpringBiasTable.values = configPage15.etbSpringBias;
+    etbSpringBiasTable.axisX = configPage15.etbSpringBiasPos;
+
     //Setup the calibration tables
     loadCalibration();
 
@@ -344,7 +350,7 @@ void initialiseAll()
     //initialiseDisplay();
     initialiseIdle();
     initialiseFan();
-    initialiseAuxPWM();
+    //initialiseAuxPWM();
     initialiseCorrections();
     BIT_CLEAR(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();
@@ -2565,9 +2571,11 @@ void setPinMapping(byte boardID)
   {
     if (configPage15.etbPositionPinA < BOARD_MAX_IO_PINS) { pinEtbPositionA = pinTranslateAnalog(configPage15.etbPositionPinA); }
     if (configPage15.etbPositionPinB < BOARD_MAX_IO_PINS) { pinEtbPositionB = pinTranslateAnalog(configPage15.etbPositionPinB); }
-    if (configPage15.etbMotorPinA < BOARD_MAX_IO_PINS) { pinEtbMotorA = pinTranslate(configPage15.etbMotorPinA); }
-    if (configPage15.etbMotorPinB < BOARD_MAX_IO_PINS) { pinEtbMotorB = pinTranslate(configPage15.etbMotorPinB); }
   }
+
+  if ( (configPage15.vtecEnabled) && (configPage15.vtecPin < BOARD_MAX_IO_PINS) ) {pinVTEC = pinTranslate(configPage15.vtecPin); }
+
+  initialiseAuxPWM();
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -2601,7 +2609,7 @@ void setPinMapping(byte boardID)
   pinMode(pinStepperStep, OUTPUT);
   pinMode(pinStepperEnable, OUTPUT);
   pinMode(pinBoost, OUTPUT);
-  pinMode(pinVVT_1, OUTPUT);
+  //pinMode(pinVVT_1, OUTPUT);
   pinMode(pinVVT_2, OUTPUT);
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
@@ -2784,12 +2792,14 @@ void setPinMapping(byte boardID)
       else { pinMode(pinWMIEmpty, INPUT); } //inverted setting
     }
   }
-  if (configPage15.etbEnable > 0)
+  if(configPage15.etbEnable > 0)
   {
     if (!pinIsOutput(pinEtbPositionA)) { pinMode(pinEtbPositionA, INPUT); }
     if (!pinIsOutput(pinEtbPositionB)) { pinMode(pinEtbPositionB, INPUT); }
-    pinMode(pinEtbMotorA, OUTPUT);
-    pinMode(pinEtbMotorB, OUTPUT);
+  }
+  if(configPage15.vtecEnabled > 0)
+  {
+    pinMode(pinVTEC, OUTPUT);
   }
 
   //These must come after the above pinMode statements
